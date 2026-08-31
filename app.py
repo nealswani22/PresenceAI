@@ -9,13 +9,20 @@ import base64
 app = Flask(__name__)
 CORS(app)
 
-# Landmark Index Definitions
+
 m_l, m_r, m_t, m_b = 61, 291, 13, 14
 left_b_i, left_b_o = 107, 70
 right_b_i, right_b_o = 336, 300
 left_e_t, left_e_b = 159, 145
 right_e_t, right_e_b = 386, 374
 n, c, f = 1, 152, 10
+
+left_iris = [474, 475, 476, 477]
+right_iris = [469, 470, 471, 472]
+left_eye_left = 33
+left_eye_right = 133
+right_eye_left = 362
+right_eye_right = 263
 
 HISTORY_LEN = 20
 score_history = []
@@ -30,12 +37,65 @@ mp_face_mesh = mp.solutions.face_mesh.FaceMesh(
 def get_point(landmarks, idx, w, h):
     lm = landmarks[idx]
     return np.array([lm.x * w, lm.y * h])
+def get_iris_center(landmarks, iris_indices, w, h):
+    points = [
+        get_point(landmarks, idx, w, h)
+        for idx in iris_indices
+    ]
+
+    return np.mean(points, axis=0)
 
 def compute_confidence_score(landmarks, w, h):
     scores = {}
     nose     = get_point(landmarks, n, w, h)
     chin     = get_point(landmarks, c, w, h)
     forehead = get_point(landmarks, f, w, h)
+    left_iris_center = get_iris_center(
+        landmarks, left_iris, w, h
+    )
+    right_iris_center = get_iris_center(
+        landmarks, right_iris, w, h
+    )
+    l_eye_left = get_point(
+        landmarks, left_eye_left, w, h
+    )
+
+    l_eye_right = get_point(
+        landmarks, left_eye_right, w, h
+    )
+
+    r_eye_left = get_point(
+        landmarks, right_eye_left, w, h
+    )
+
+    r_eye_right = get_point(
+        landmarks, right_eye_right, w, h
+    )
+
+    left_eye_width = (
+        np.linalg.norm(l_eye_right - l_eye_left) + 1e-6
+    )
+
+    right_eye_width = (
+        np.linalg.norm(r_eye_right - r_eye_left) + 1e-6
+    )
+
+
+    left_eye_min_x = min(l_eye_left[0], l_eye_right[0])
+    left_eye_max_x = max(l_eye_left[0], l_eye_right[0])
+
+    right_eye_min_x = min(r_eye_left[0], r_eye_right[0])
+    right_eye_max_x = max(r_eye_left[0], r_eye_right[0])
+
+    left_gaze_x = (
+        left_iris_center[0] - left_eye_min_x
+    ) / (left_eye_max_x - left_eye_min_x + 1e-6)
+
+    right_gaze_x = (
+        right_iris_center[0] - right_eye_min_x
+    ) / (right_eye_max_x - right_eye_min_x + 1e-6)
+
+    avg_gaze_x = (left_gaze_x + right_gaze_x) / 2
 
     upper = nose[1] - forehead[1]  
     lower = chin[1] - nose[1]       
@@ -73,11 +133,43 @@ def compute_confidence_score(landmarks, w, h):
     avg_eye = (left_open + right_open) / 2
     scores["eye_openness"] = float(np.clip(avg_eye * 50, 0, 1))
 
+    left_eye_height = abs(le_b[1] - le_t[1]) + 1e-6
+    right_eye_height = abs(re_b[1] - re_t[1]) + 1e-6
+
+    left_gaze_y = (
+        left_iris_center[1] - le_t[1]
+    ) / left_eye_height
+
+    right_gaze_y = (
+        right_iris_center[1] - re_t[1]
+    ) / right_eye_height
+
+    avg_gaze_y = (left_gaze_y + right_gaze_y) / 2
+    
+    camera_gaze_x = 0.37
+    right_limit = 0.24
+    left_limit = 0.60
+
+    if avg_gaze_x < camera_gaze_x:
+        eye_look_score = (
+            avg_gaze_x - right_limit
+        ) / (camera_gaze_x - right_limit)
+    else:
+        eye_look_score = (
+            left_limit - avg_gaze_x
+        ) / (left_limit - camera_gaze_x)
+
+    eye_look_score = float(
+        np.clip(eye_look_score, 0, 1)
+    )
+
+    scores["eye_look"] = eye_look_score
     weights = {
         "head_pitch":   0.15,
-        "mouth_curve":  0.35,
+        "mouth_curve":  0.25,
         "brow_height":  0.15,
-        "eye_openness": 0.35,
+        "eye_openness": 0.20,
+        "eye_look":     0.25,
     }
     final = sum(scores[k] * weights[k] for k in weights)
     return final, scores
@@ -137,6 +229,7 @@ def process_frame():
                 h
             )
 
+
             smoothed = smooth_score(raw_score)
 
             status_text = (
@@ -160,5 +253,5 @@ def process_frame():
     })
 
 if __name__ == '__main__':
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 5001))
     app.run(host='0.0.0.0', port=port, debug=False)
