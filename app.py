@@ -165,11 +165,11 @@ def compute_confidence_score(landmarks, w, h):
 
     scores["eye_look"] = eye_look_score
     weights = {
-        "head_pitch":   0.15,
-        "mouth_curve":  0.25,
-        "brow_height":  0.15,
-        "eye_openness": 0.20,
-        "eye_look":     0.25,
+        "head_pitch":   0.18,
+        "mouth_curve":  0.10,
+        "brow_height":  0.20,
+        "eye_openness": 0.25,
+        "eye_look":     0.27,
     }
     final = sum(scores[k] * weights[k] for k in weights)
     return final, scores
