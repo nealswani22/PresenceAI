@@ -1,4 +1,4 @@
-# Real-Time Facial Confidence Tracker
+# PresenceAI👨‍💻
 
 An AI-powered computer vision application built with Python, Flask, OpenCV, and MediaPipe. The system processes live webcam feeds, detects facial landmarks, computes multi-metric confidence scores and displays real-time visual analytics through a web dashboard.
 
