@@ -13,6 +13,7 @@ An AI-powered computer vision application built with Python, Flask, OpenCV, and 
   * **Mouth Curve:** Tracks mouth curvature to measure smile formation.
   * **Brow Height:** Evaluates eyebrow position relative to the eyes.
   * **Eye Openness:** Measures eyelid aperture for visual engagement.
+  * **Attentiveness:** Tracks the retinal movement to evaluate attentiveness.
 
 * **Temporal Smoothing:** Uses a moving window average (`N=20`) to reduce fluctuations in the confidence score.
 
@@ -41,10 +42,11 @@ An AI-powered computer vision application built with Python, Flask, OpenCV, and 
 
 Confidence is calculated using a weighted composite score bounded between `0.00` and `1.00`:
 
-* **Mouth Curve (35%):** Tracks smile formation.
-* **Eye Openness (35%):** Measures visual engagement and eye openness.
+* **Mouth Curve (25%):** Tracks smile formation.
+* **Eye Openness (20%):** Measures visual engagement and eye openness.
 * **Head Pitch (15%):** Evaluates head positioning.
 * **Brow Height (15%):** Measures eyebrow position.
+* **Attentiveness (25%):** Tracks the user’s eye 
 
 **Classification Threshold:**
 
@@ -58,13 +60,17 @@ Confidence is calculated using a weighted composite score bounded between `0.00`
 ```text
 Confidence_Tracker/
 │
-├── app.py                 # Flask server and computer vision logic
+├── app.py
 │
 ├── templates/
-│   └── index.html         # Web dashboard and live webcam interface
+│   └── index.html
 │
-├── Dockerfile             # Docker configuration
-├── requirements.txt       # Python dependencies
-├── .dockerignore          # Docker build exclusions
-├── .gitignore             # Git exclusions
-└── README.md              # Project documentation
+├── static/
+│   ├── style.css
+│   └── script.js
+│
+├── Dockerfile
+├── requirements.txt
+├── .dockerignore
+├── .gitignore
+└── README.md
